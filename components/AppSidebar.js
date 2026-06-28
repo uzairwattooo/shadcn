@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useMutation } from "@tanstack/react-query";
+import { usePathname, useRouter } from "next/navigation";
 import {
     LayoutDashboard,
     Users,
@@ -9,6 +11,8 @@ import {
     Settings,
     LogOut,
 } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 import {
     Sidebar,
@@ -31,26 +35,48 @@ const links = [
 ];
 
 export default function AppSidebar() {
+    const pathname = usePathname();
+    const router = useRouter();
+const logoutMutation = useMutation({
+  mutationFn: async () => {
+    const { error } = await authClient.signOut();
+    if (error) throw new Error(error.message);
+  },
+
+  onSuccess: () => {
+    toast.success("Logout successful");
+    router.replace("/auth/login");
+    router.refresh();
+  },
+
+  onError: (error) => {
+    toast.error(error.message || "Logout failed");
+  },
+});
     return (
-        <Sidebar className="mt-16">
+        <Sidebar>
             <SidebarContent>
-                <SidebarGroup>
+                <SidebarGroup  className="mt-16">
                     <SidebarGroupLabel className="text-lg font-bold">
                         Admin Panel
                     </SidebarGroupLabel>
 
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {links.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton asChild>
-                                        <Link href={item.url}>
-                                            <item.icon />
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
+                            {links.map((item) => {
+                                const active = pathname === item.url;
+
+                                return (
+                                    <SidebarMenuItem key={item.title}>
+                                        <SidebarMenuButton asChild isActive={active}>
+                                            <Link href={item.url}>
+                                                <item.icon />
+                                                <span>{item.title}</span>
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                );
+                            })}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
@@ -59,9 +85,14 @@ export default function AppSidebar() {
             <SidebarFooter>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton>
+                        <SidebarMenuButton
+                            onClick={() => logoutMutation.mutate()}
+                            disabled={logoutMutation.isPending}
+                        >
                             <LogOut />
-                            <span>Logout</span>
+                            <span>
+                                {logoutMutation.isPending ? "Logging out..." : "Logout"}
+                            </span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>

@@ -1,5 +1,6 @@
 import Navbar from "@/components/Navbar";
 import "./globals.css";
+import Providers from "./providers";
 
 
 export const metadata = {
@@ -11,10 +12,13 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className="h-full antialiased"
-    >
+      className="h-full antialiased">
       <body className="min-h-full flex flex-col" cz-shortcut-listen="true">
-        <Navbar />{children}</body>
+        <Providers>
+        <Navbar />
+          {children}
+        </Providers>
+      </body>
     </html>
   );
 }
