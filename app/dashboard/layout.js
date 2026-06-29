@@ -5,17 +5,12 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 export default async function DashboardLayout({ children }) {
-    let session = null;
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
 
-    try {
-        session = await auth.api.getSession({
-            headers: await headers(),
-        });
-        if (!session?.user) {
-            redirect("/auth/login");
-        }
-    } catch (error) {
-        console.log("SESSION ERROR:", error);
+    if (!session?.user) {
+        redirect("/auth/login");
     }
 
     return (
