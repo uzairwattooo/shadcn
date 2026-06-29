@@ -15,7 +15,7 @@ export default async function DashboardLayout({ children }) {
 
     return (
         <SidebarProvider>
-            <AppSidebar />
+            <AppSidebar user={session.user}/>
 
             <main className="w-full bg-muted/40">
                 <header className="flex h-16 items-center gap-4 border-b bg-white px-6">

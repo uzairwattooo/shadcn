@@ -12,6 +12,9 @@ export const user = pgTable("user", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
+  role: text("role").default("customer").notNull(),
+  stripeAccountId: text("stripe_account_id"),
+  stripeOnboarded: boolean("stripe_onboarded").default(false),
 });
 
 export const session = pgTable(

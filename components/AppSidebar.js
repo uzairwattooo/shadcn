@@ -26,7 +26,7 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-const links = [
+const adminLinks = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "Products", url: "/dashboard/products", icon: Package },
     { title: "Orders", url: "/dashboard/orders", icon: ShoppingCart },
@@ -34,29 +34,45 @@ const links = [
     { title: "Settings", url: "/dashboard/settings", icon: Settings },
 ];
 
-export default function AppSidebar() {
+const sellerLinks = [
+    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    { title: "My Products", url: "/dashboard/products", icon: Package },
+    { title: "My Orders", url: "/dashboard/orders", icon: ShoppingCart },
+    { title: "Stripe Connect", url: "/dashboard/connect", icon: Settings },
+];
+
+const customerLinks = [
+    { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+    { title: "My Orders", url: "/dashboard/orders", icon: ShoppingCart },
+];
+export default function AppSidebar({ user }) {
     const pathname = usePathname();
     const router = useRouter();
-const logoutMutation = useMutation({
-  mutationFn: async () => {
-    const { error } = await authClient.signOut();
-    if (error) throw new Error(error.message);
-  },
 
-  onSuccess: () => {
-    toast.success("Logout successful");
-    router.replace("/auth/login");
-    router.refresh();
-  },
-
-  onError: (error) => {
-    toast.error(error.message || "Logout failed");
-  },
-});
+    const links =
+        user?.role === "admin"
+            ? adminLinks
+            : user?.role === "seller"
+                ? sellerLinks
+                : customerLinks;
+    const logoutMutation = useMutation({
+        mutationFn: async () => {
+            const { error } = await authClient.signOut();
+            if (error) throw new Error(error.message);
+        },
+        onSuccess: () => {
+            toast.success("Logout successful");
+            router.replace("/auth/login");
+            router.refresh();
+        },
+        onError: (error) => {
+            toast.error(error.message || "Logout failed");
+        },
+    });
     return (
         <Sidebar>
             <SidebarContent>
-                <SidebarGroup  className="mt-16">
+                <SidebarGroup className="mt-16">
                     <SidebarGroupLabel className="text-lg font-bold">
                         Admin Panel
                     </SidebarGroupLabel>

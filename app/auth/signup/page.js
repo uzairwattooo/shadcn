@@ -10,20 +10,20 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-
 export default function SignupPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [name, setName] = useState("");
     const [errors, setErrors] = useState({});
+    const [role, setRole] = useState("customer");
     const router = useRouter();
+
     const validate = () => {
         const newErrors = {};
 
         if (!name.trim()) {
             newErrors.name = "Name is required";
         }
-
         if (!email.trim()) {
             newErrors.email = "Email is required";
         } else if (!email.includes("@")) {
@@ -35,7 +35,9 @@ export default function SignupPage() {
         } else if (password.length < 6) {
             newErrors.password = "Password must be at least 6 characters";
         }
-
+        if (!role.trim()) {
+            newErrors.role = "role is required";
+        }
         setErrors(newErrors);
 
         return Object.keys(newErrors).length === 0;
@@ -46,30 +48,28 @@ export default function SignupPage() {
                 name,
                 email,
                 password,
+                role,
             });
 
             if (error) throw new Error(error.message);
             return data;
         },
-
         onSuccess: () => {
             toast.success("Account created successfully");
             router.push("/dashboard");
         },
-
         onError: (error) => {
             toast.error(error.message || "Signup failed");
         },
     });
-
     const handleSignup = (e) => {
         e.preventDefault();
         if (!validate()) return;
-
         signupMutation.mutate({
-            name: e.target.name.value,
-            email: e.target.email.value,
-            password: e.target.password.value,
+            name,
+            email,
+            password,
+            role,
         });
     };
     return (
@@ -107,7 +107,17 @@ export default function SignupPage() {
                                 <p className="text-sm text-red-500">{errors.password}</p>
                             )}
                         </div>
-
+                        <div className="space-y-2">
+                            <Label>Account Type</Label>
+                            <select
+                                value={role}
+                                onChange={(e) => setRole(e.target.value)}
+                                className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                                <option value="customer">Customer</option>
+                                <option value="seller">Seller</option>
+                            </select>
+                            
+                        </div>
                         <Button className="w-full" disabled={signupMutation.isPending}>{signupMutation.isPending ? "Creating..." : "Signup"}</Button>
 
                         <p className="text-center text-sm text-muted-foreground">

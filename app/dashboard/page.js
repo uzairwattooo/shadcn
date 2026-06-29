@@ -1,155 +1,105 @@
-"use client";
-
-import { useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
-const orders = [
-    { id: 1001, name: "Ali Khan", status: "Completed", amount: 1200 },
-    { id: 1002, name: "Ahmed Raza", status: "Pending", amount: 800 },
-    { id: 1003, name: "Sara Malik", status: "Completed", amount: 1500 },
-    { id: 1004, name: "Usman Ali", status: "Cancelled", amount: 500 },
-];
+export default async function DashboardPage() {
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
 
-export default function DashboardPage() {
-    const [search, setSearch] = useState("");
-    const [status, setStatus] = useState("all");
+    const user = session?.user;
+    const role = user?.role;
 
-    const filteredOrders = useMemo(() => {
-        return orders.filter((order) => {
-            const matchSearch = order.name.toLowerCase().includes(search.toLowerCase());
-            const matchStatus = status === "all" || order.status === status;
+    if (role === "seller") {
+        return <SellerDashboard user={user} />;
+    }
 
-            return matchSearch && matchStatus;
-        });
-    }, [search, status]);
+    if (role === "admin") {
+        return <AdminDashboard user={user} />;
+    }
 
-    const totalSales = orders.reduce((sum, order) => sum + order.amount, 0);
-    const completedOrders = orders.filter((order) => order.status === "Completed").length;
+    return <CustomerDashboard user={user} />;
+}
 
+function SellerDashboard({ user }) {
     return (
-        <div className="space-y-6 rounded-xl bg-slate-50 p-4">
-            <div className="rounded-xl border bg-gradient-to-r from-slate-900 to-slate-700 p-6 text-white shadow-sm">
-                <h2 className="text-3xl font-bold">Welcome back</h2>
-                <p className="mt-1 text-sm text-slate-200">
-                    Here is your business overview.
-                </p>
+        <div className="space-y-6">
+            <div className="rounded-xl bg-slate-900 p-6 text-white">
+                <h2 className="text-3xl font-bold">Seller Dashboard</h2>
+                <p className="text-slate-300">Welcome {user.name}</p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <StatsCard
-                    title="Total Sales"
-                    value={`$${totalSales}`}
-                    badge="+12%"
-                    color="border-blue-500"
-                />
-                <StatsCard
-                    title="Orders"
-                    value={orders.length}
-                    badge="+8%"
-                    color="border-orange-500"
-                />
-                <StatsCard
-                    title="Completed"
-                    value={completedOrders}
-                    badge="Done"
-                    color="border-green-500"
-                />
-                <StatsCard
-                    title="Products"
-                    value="89"
-                    badge="Active"
-                    color="border-purple-500"
-                />
+            <div className="grid gap-4 md:grid-cols-3">
+                <StatsCard title="My Products" value="0" />
+                <StatsCard title="My Orders" value="0" />
+                <StatsCard title="Stripe Status" value={user.stripeOnboarded ? "Connected" : "Not Connected"} />
             </div>
-            <Card className="border-0 shadow-sm">
-                <CardHeader className="space-y-4">
-                    <div>
-                        <CardTitle>Recent Orders</CardTitle>
+
+            {!user.stripeOnboarded && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Connect Stripe</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex items-center justify-between">
                         <p className="text-sm text-muted-foreground">
-                            Search and filter customer orders.
+                            Connect your Stripe account to receive payments.
                         </p>
-                    </div>
-                    <div className="grid gap-3 md:grid-cols-2">
-                        <Input
-                            className="bg-slate-50"
-                            placeholder="Search customer..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-                        <Select value={status} onValueChange={setStatus}>
-                            <SelectTrigger className="bg-slate-50">
-                                <SelectValue placeholder="Filter status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Orders</SelectItem>
-                                <SelectItem value="Completed">Completed</SelectItem>
-                                <SelectItem value="Pending">Pending</SelectItem>
-                                <SelectItem value="Cancelled">Cancelled</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-3">
-                        {filteredOrders.length > 0 ? (
-                            filteredOrders.map((order) => (
-                                <div
-                                    key={order.id}
-                                    className="flex items-center justify-between rounded-lg border bg-white p-4 transition hover:bg-slate-50"
-                                >
-                                    <div>
-                                        <p className="font-medium">{order.name}</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            Order #{order.id} · ${order.amount}
-                                        </p>
-                                    </div>
-
-                                    <Badge
-                                        className={
-                                            order.status === "Completed"
-                                                ? "bg-green-100 text-green-700 hover:bg-green-100"
-                                                : order.status === "Pending"
-                                                    ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
-                                                    : "bg-red-100 text-red-700 hover:bg-red-100"
-                                        }
-                                    >
-                                        {order.status}
-                                    </Badge>
-                                </div>
-                            ))
-                        ) : (
-                            <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                                No orders found.
-                            </p>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
+                        <Button asChild>
+                            <Link href="/dashboard/connect">Connect Stripe</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 }
 
-function StatsCard({ title, value, badge, color }) {
+function AdminDashboard({ user }) {
     return (
-        <Card className={`border-4 ${color} shadow-sm transition`}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600">
-                    {title}
-                </CardTitle>
-                <Badge variant="secondary">{badge}</Badge>
-            </CardHeader>
+        <div className="space-y-6">
+            <div className="rounded-xl bg-slate-900 p-6 text-white">
+                <h2 className="text-3xl font-bold">Admin Dashboard</h2>
+                <p className="text-slate-300">Welcome {user.name}</p>
+            </div>
 
+            <div className="grid gap-4 md:grid-cols-3">
+                <StatsCard title="Sellers" value="0" />
+                <StatsCard title="Products" value="0" />
+                <StatsCard title="Orders" value="0" />
+            </div>
+        </div>
+    );
+}
+
+function CustomerDashboard({ user }) {
+    return (
+        <div className="space-y-6">
+            <div className="rounded-xl bg-slate-900 p-6 text-white">
+                <h2 className="text-3xl font-bold">Customer Dashboard</h2>
+                <p className="text-slate-300">Welcome {user.name}</p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+                <StatsCard title="My Orders" value="0" />
+                <StatsCard title="Wishlist" value="0" />
+                <StatsCard title="Account" value="Active" />
+            </div>
+        </div>
+    );
+}
+
+function StatsCard({ title, value }) {
+    return (
+        <Card className="border-l-4 border-l-cyan-500 shadow-sm">
+            <CardHeader>
+                <CardTitle className="text-sm text-muted-foreground">{title}</CardTitle>
+            </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold text-slate-900">{value}</div>
+                <div className="text-2xl font-bold">{value}</div>
+                <Badge variant="secondary" className="mt-2">Live</Badge>
             </CardContent>
         </Card>
     );

@@ -44,9 +44,17 @@ export default function LoginPage() {
             return data;
         },
 
-        onSuccess: () => {
+        onSuccess: async () => {
+            const { data } = await authClient.getSession();
+            const role = data?.user?.role;
+            if (role === "admin") {
+                router.push("/dashboard");
+            } else if (role === "seller") {
+                router.push("/seller");
+            } else {
+                router.push("/customer");
+            }
             toast.success("Login successful");
-            router.push("/dashboard");
         },
 
         onError: (error) => {
