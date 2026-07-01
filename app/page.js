@@ -1,19 +1,13 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  BadgeCheck,
-  CreditCard,
-  Package,
-  ShieldCheck,
-  Store,
-  Users,
-} from "lucide-react";
 
+import {ArrowRight, BadgeCheck, CreditCard, Package, ShieldCheck, Store, Users,} from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import Footer from "@/components/Footer";
 
 export default function HomePage() {
   return (
+    <>
     <main className="min-h-screen bg-slate-50">
       <section className="mx-auto grid max-w-7xl gap-10 px-6 py-20 lg:grid-cols-2 lg:items-center">
         <div>
@@ -148,6 +142,8 @@ export default function HomePage() {
         </div>
       </section>
     </main>
+    <Footer />
+    </>
   );
 }
 
@@ -182,5 +178,7 @@ function Step({ number, title, text }) {
       <h3 className="mt-3 text-xl font-semibold">{title}</h3>
       <p className="mt-2 text-sm text-slate-300">{text}</p>
     </div>
+    
   );
 }
+
