@@ -15,7 +15,7 @@ export default function RootLayout({ children }) {
       className="h-full antialiased">
       <body className="min-h-full flex flex-col" cz-shortcut-listen="true">
         <Providers>
-        <Navbar />
+          <Navbar />
           {children}
         </Providers>
       </body>

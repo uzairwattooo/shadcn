@@ -30,20 +30,17 @@ const adminLinks = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "Products", url: "/dashboard/products", icon: Package },
     { title: "Orders", url: "/dashboard/orders", icon: ShoppingCart },
-    { title: "Customers", url: "/dashboard/customers", icon: Users },
-    { title: "Settings", url: "/dashboard/settings", icon: Settings },
 ];
 
 const sellerLinks = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "My Products", url: "/dashboard/products", icon: Package },
-    { title: "My Orders", url: "/dashboard/orders", icon: ShoppingCart },
     { title: "Stripe Connect", url: "/dashboard/connect", icon: Settings },
 ];
 
 const customerLinks = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-    { title: "My Orders", url: "/dashboard/orders", icon: ShoppingCart },
+    { title: "Shop", url: "/customer", icon: ShoppingCart },
 ];
 export default function AppSidebar({ user }) {
     const pathname = usePathname();

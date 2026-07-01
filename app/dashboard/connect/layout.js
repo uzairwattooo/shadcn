@@ -2,16 +2,13 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-export default async function AuthLayout({ children }) {
+export default async function ProductsLayout({ children }) {
     const session = await auth.api.getSession({
         headers: await headers(),
     });
+    if (!session?.user) redirect("/auth/login");
 
-    if (session?.user) {
-        if (session.user.role === "customer") {
-            redirect("/customer");
-        }
-
+    if (session.user.role !== "seller") {
         redirect("/dashboard");
     }
 

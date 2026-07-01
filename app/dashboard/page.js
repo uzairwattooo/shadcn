@@ -3,6 +3,9 @@ import { headers } from "next/headers";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { db } from "@/db";
+import { product, user as userTable } from "@/db/schema";
+import { eq, sql } from "drizzle-orm";
 import Link from "next/link";
 
 export default async function DashboardPage() {
@@ -13,18 +16,43 @@ export default async function DashboardPage() {
     const user = session?.user;
     const role = user?.role;
 
+    const totalProducts = await db
+        .select({ count: sql`count(*)` })
+        .from(product);
+
+    const totalSellers = await db
+        .select({ count: sql`count(*)` })
+        .from(userTable)
+        .where(eq(userTable.role, "seller"));
+
+    const sellerProducts = await db
+        .select({ count: sql`count(*)` })
+        .from(product)
+        .where(eq(product.sellerId, user.id));
+
     if (role === "seller") {
-        return <SellerDashboard user={user} />;
+        return (
+            <SellerDashboard
+                user={user}
+                productCount={sellerProducts[0].count}
+            />
+        );
     }
 
     if (role === "admin") {
-        return <AdminDashboard user={user} />;
+        return (
+            <AdminDashboard
+                user={user}
+                sellerCount={totalSellers[0].count}
+                productCount={totalProducts[0].count}
+            />
+        );
     }
 
     return <CustomerDashboard user={user} />;
 }
 
-function SellerDashboard({ user }) {
+function SellerDashboard({ user, productCount }) {
     return (
         <div className="space-y-6">
             <div className="rounded-xl bg-slate-900 p-6 text-white">
@@ -33,31 +61,17 @@ function SellerDashboard({ user }) {
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
-                <StatsCard title="My Products" value="0" />
+                <StatsCard title="My Products" value={productCount} />
                 <StatsCard title="My Orders" value="0" />
-                <StatsCard title="Stripe Status" value={user.stripeOnboarded ? "Connected" : "Not Connected"} />
+                <StatsCard
+                    title="Stripe Status"
+                    value={user.stripeOnboarded ? "Connected" : "Not Connected"}
+                />
             </div>
-
-            {!user.stripeOnboarded && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Connect Stripe</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">
-                            Connect your Stripe account to receive payments.
-                        </p>
-                        <Button asChild>
-                            <Link href="/dashboard/connect">Connect Stripe</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-            )}
         </div>
     );
 }
-
-function AdminDashboard({ user }) {
+function AdminDashboard({ user, sellerCount, productCount }) {
     return (
         <div className="space-y-6">
             <div className="rounded-xl bg-slate-900 p-6 text-white">
@@ -66,8 +80,8 @@ function AdminDashboard({ user }) {
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
-                <StatsCard title="Sellers" value="0" />
-                <StatsCard title="Products" value="0" />
+                <StatsCard title="Sellers" value={sellerCount} />
+                <StatsCard title="Products" value={productCount} />
                 <StatsCard title="Orders" value="0" />
             </div>
         </div>
