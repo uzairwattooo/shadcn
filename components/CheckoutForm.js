@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import {
+    Elements,
+    PaymentElement,
+    useElements,
+    useStripe,
+} from "@stripe/react-stripe-js";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -18,11 +23,33 @@ export default function CheckoutForm({ productId, stripePromise }) {
         address: "",
     });
 
+    const [errors, setErrors] = useState({});
+
+    const updateField = (field, value) => {
+        setCustomer((prev) => ({ ...prev, [field]: value }));
+        setErrors((prev) => ({ ...prev, [field]: "" }));
+    };
+
+    const validate = () => {
+        const newErrors = {};
+
+        if (!customer.name.trim()) newErrors.name = "Name is required";
+        if (!customer.email.trim()) newErrors.email = "Email is required";
+        else if (!customer.email.includes("@")) newErrors.email = "Enter valid email";
+
+        if (!customer.phone.trim()) newErrors.phone = "Phone number is required";
+        if (!customer.address.trim()) newErrors.address = "Address is required";
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const createIntent = useMutation({
         mutationFn: async () => {
-            if (!customer.name || !customer.email || !customer.phone || !customer.address) {
-                throw new Error("Please fill all customer details");
+            if (!validate()) {
+                throw new Error("Please fix the form errors");
             }
+
             const res = await fetch("/api/payment-intent", {
                 method: "POST",
                 headers: {
@@ -33,14 +60,20 @@ export default function CheckoutForm({ productId, stripePromise }) {
                     customer,
                 }),
             });
+
             const data = await res.json();
+
             if (!res.ok) throw new Error(data.message);
             return data;
         },
+
         onError: (error) => {
-            toast.error(error.message);
+            if (error.message !== "Please fix the form errors") {
+                toast.error(error.message);
+            }
         },
     });
+
     if (createIntent.data?.clientSecret) {
         return (
             <Elements
@@ -53,7 +86,7 @@ export default function CheckoutForm({ productId, stripePromise }) {
                             colorPrimary: "#06b6d4",
                             colorBackground: "#ffffff",
                             colorText: "#0f172a",
-                            borderRadius: "10px",
+                            borderRadius: "12px",
                         },
                     },
                 }}
@@ -62,54 +95,54 @@ export default function CheckoutForm({ productId, stripePromise }) {
             </Elements>
         );
     }
+
     return (
-        <Card className="border-0 shadow-lg">
-            <CardHeader className="rounded-t-lg bg-slate-950 text-white">
-                <CardTitle>Checkout Details</CardTitle>
+        <Card className="overflow-hidden border-0 shadow-xl">
+            <CardHeader className="bg-slate-950 px-6 py-7 text-white">
+                <CardTitle className="text-2xl">Checkout Details</CardTitle>
                 <p className="text-sm text-slate-300">
-                    Fill your details before payment.
+                    Enter your delivery information before payment.
                 </p>
             </CardHeader>
-            <CardContent className="space-y-4 p-6">
-                <div>
-                    <Label>Name</Label>
-                    <Input
-                        value={customer.name}
-                        onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
-                        placeholder="Enter your name"
-                    />
-                </div>
-                <div>
-                    <Label>Email</Label>
-                    <Input
-                        type="email"
-                        value={customer.email}
-                        onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
-                        placeholder="Enter your email"
-                    />
-                </div>
-                <div>
-                    <Label>Phone</Label>
-                    <Input
-                        value={customer.phone}
-                        onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
-                        placeholder="Enter phone number"
-                    />
-                </div>
-                <div>
-                    <Label>Address</Label>
-                    <Input
-                        value={customer.address}
-                        onChange={(e) =>
-                            setCustomer({ ...customer, address: e.target.value })
-                        }
-                        placeholder="Enter address"
-                    />
-                </div>
+
+            <CardContent className="space-y-5 bg-white p-6">
+                <FormInput
+                    label="Full Name"
+                    placeholder="Enter your name"
+                    value={customer.name}
+                    error={errors.name}
+                    onChange={(value) => updateField("name", value)}
+                />
+
+                <FormInput
+                    label="Email Address"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={customer.email}
+                    error={errors.email}
+                    onChange={(value) => updateField("email", value)}
+                />
+
+                <FormInput
+                    label="Phone Number"
+                    placeholder="Enter phone number"
+                    value={customer.phone}
+                    error={errors.phone}
+                    onChange={(value) => updateField("phone", value)}
+                />
+
+                <FormInput
+                    label="Delivery Address"
+                    placeholder="Enter address"
+                    value={customer.address}
+                    error={errors.address}
+                    onChange={(value) => updateField("address", value)}
+                />
+
                 <Button
                     onClick={() => createIntent.mutate()}
                     disabled={createIntent.isPending}
-                    className="w-full bg-cyan-500 hover:bg-cyan-600"
+                    className="mt-2 h-11 w-full bg-cyan-500 font-medium hover:bg-cyan-600"
                 >
                     {createIntent.isPending ? "Preparing Payment..." : "Continue to Payment"}
                 </Button>
@@ -117,6 +150,28 @@ export default function CheckoutForm({ productId, stripePromise }) {
         </Card>
     );
 }
+
+function FormInput({ label, value, onChange, error, placeholder, type = "text" }) {
+    return (
+        <div className="space-y-2">
+            <Label className="text-sm font-medium text-slate-700">{label}</Label>
+
+            <Input
+                type={type}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
+                className={`h-11 ${error
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : "border-slate-200"
+                    }`}
+            />
+
+            <p className="min-h-[18px] text-sm text-red-500">{error}</p>
+        </div>
+    );
+}
+
 function PaymentBox({ customer }) {
     const stripe = useStripe();
     const elements = useElements();
@@ -124,7 +179,9 @@ function PaymentBox({ customer }) {
 
     const handlePay = async () => {
         if (!stripe || !elements) return;
+
         setLoading(true);
+
         const { error } = await stripe.confirmPayment({
             elements,
             confirmParams: {
@@ -141,25 +198,31 @@ function PaymentBox({ customer }) {
                 },
             },
         });
+
         if (error) {
             toast.error(error.message);
             setLoading(false);
         }
     };
+
     return (
-        <Card className="border-0 shadow-lg">
-            <CardHeader className="rounded-t-lg bg-slate-950 text-white">
-                <CardTitle>Payment Details</CardTitle>
+        <Card className="overflow-hidden border-0 shadow-xl">
+            <CardHeader className="bg-slate-950 px-6 py-7 text-white">
+                <CardTitle className="text-2xl">Payment Details</CardTitle>
                 <p className="text-sm text-slate-300">
-                    Enter your card details securely.
+                    Enter your card details securely through Stripe.
                 </p>
             </CardHeader>
-            <CardContent className="space-y-5 p-6">
-                <PaymentElement />
+
+            <CardContent className="space-y-6 bg-white p-6">
+                <div className="rounded-xl border bg-slate-50 p-4">
+                    <PaymentElement />
+                </div>
+
                 <Button
                     onClick={handlePay}
                     disabled={!stripe || loading}
-                    className="w-full bg-cyan-500 hover:bg-cyan-600"
+                    className="h-11 w-full bg-cyan-500 font-medium hover:bg-cyan-600"
                 >
                     {loading ? "Processing..." : "Pay Now"}
                 </Button>
